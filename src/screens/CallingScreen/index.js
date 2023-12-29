@@ -8,10 +8,10 @@ import {
   TouchableOpacity,
   View,
 } from 'react-native';
-import CallActionBox from '../../components/CallActionBox';
 import Iconics from 'react-native-vector-icons/Ionicons';
 import {useNavigation, useRoute} from '@react-navigation/native';
 import {Voximplant} from 'react-native-voximplant';
+import CallActionBox from '../../components/CallActionBox';
 
 const CallingScreen = () => {
   const navigation = useNavigation();
@@ -36,7 +36,11 @@ const CallingScreen = () => {
   };
 
   const onHangUpPress = () => {
-    call.current.hangup();
+    try {
+      call.current.hangup();
+    } catch (error) {
+      console.log('error', error);
+    }
   };
 
   useEffect(() => {
@@ -140,10 +144,14 @@ const CallingScreen = () => {
     }
 
     return () => {
-      call.current.off(Voximplant.CallEvents.Failed);
-      call.current.off(Voximplant.CallEvents.ProgressToneStart);
-      call.current.off(Voximplant.CallEvents.Connected);
-      call.current.off(Voximplant.CallEvents.Disconnected);
+      try {
+        call.current.off(Voximplant.CallEvents.Failed);
+        call.current.off(Voximplant.CallEvents.ProgressToneStart);
+        call.current.off(Voximplant.CallEvents.Connected);
+        call.current.off(Voximplant.CallEvents.Disconnected);
+      } catch (error) {
+        console.log('error', error);
+      }
     };
   }, [permissionGranted]);
 
@@ -163,10 +171,12 @@ const CallingScreen = () => {
         style={styles.localVideo}
       />
 
-      <View style={styles.cameraPreview}>
-        <Text style={styles.name}>{user?.user_display_name}</Text>
-        <Text style={styles.phoneNumber}>{callStatus}</Text>
-      </View>
+      {callStatus == 'Connected' ? null : (
+        <View style={styles.cameraPreview}>
+          <Text style={styles.name}>{user?.user_display_name}</Text>
+          <Text style={styles.phoneNumber}>{callStatus}</Text>
+        </View>
+      )}
       <CallActionBox onHangUp={onHangUpPress} />
     </View>
   );
@@ -203,15 +213,13 @@ const styles = StyleSheet.create({
     left: 20,
   },
   localVideo: {
-    width: 100,
-    height: 150,
     backgroundColor: '#ffff6e',
-
     borderRadius: 10,
-
     position: 'absolute',
-    right: 10,
-    top: 100,
+    left: 0,
+    right: 0,
+    top: '50%',
+    bottom: 30,
   },
   remoteVideo: {
     backgroundColor: '#7b4e80',
@@ -220,7 +228,7 @@ const styles = StyleSheet.create({
     left: 0,
     right: 0,
     top: 0,
-    bottom: 0,
+    bottom: '50%',
   },
 });
 

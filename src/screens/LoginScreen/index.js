@@ -27,8 +27,6 @@ const LoginScreen = () => {
         } else if (state === Voximplant.ClientState.LOGGED_IN) {
           redirectHome();
         }
-        console.log(state);
-        // let authResult = await client.login("userName", "password");
       } catch (e) {
         console.log(e.name + e.message);
       }
@@ -40,10 +38,8 @@ const LoginScreen = () => {
 
     try {
       const data = await client.login(fqUserName, password);
-      console.log(data, 'login time');
       redirectHome();
     } catch (error) {
-      console.log('login error => ', error);
       Alert.alert('AuthResult', 'ErrorCode  ' + error.code);
     }
   };
@@ -86,7 +82,6 @@ const Styles = StyleSheet.create({
   page: {
     padding: 10,
     alignItems: 'stretch',
-    // backgroundColor: 'red',
     flex: 1,
     justifyContent: 'center',
   },

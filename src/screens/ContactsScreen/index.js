@@ -51,7 +51,15 @@ const ContactsScreen = () => {
         data={filterContacts}
         renderItem={({item}) => (
           <TouchableOpacity onPress={() => callUser(item)}>
-            <Text style={styles.contactName}>{item.user_display_name}</Text>
+            <View
+              style={{
+                flexDirection: 'row',
+                justifyContent: 'space-between',
+                paddingHorizontal: 20,
+              }}>
+              <Text style={styles.contactName}>{item.user_display_name}</Text>
+              <Text style={styles.contactName}>{item.password}</Text>
+            </View>
           </TouchableOpacity>
         )}
         ItemSeparatorComponent={() => <View style={styles.seprator} />}

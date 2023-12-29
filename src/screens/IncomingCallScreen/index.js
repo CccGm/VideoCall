@@ -27,7 +27,11 @@ const IncomingCallScreen = () => {
     });
 
     return () => {
-      call.off(Voximplant.CallEvents.Disconnected);
+      try {
+        call.off(Voximplant.CallEvents.Disconnected);
+      } catch (error) {
+        console.log(error, 'error');
+      }
     };
   }, []);
 
@@ -88,7 +92,7 @@ const styles = StyleSheet.create({
   },
   phoneNumber: {fontSize: 20, color: 'white'},
   bg: {
-    backgroundColor: 'red',
+    backgroundColor: '#e2e1e1',
     flex: 1,
     alignItems: 'center',
     padding: 10,
