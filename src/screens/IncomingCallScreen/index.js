@@ -1,4 +1,4 @@
-import React from 'react';
+import React, {useEffect, useState} from 'react';
 import {
   ImageBackground,
   StyleSheet,
@@ -10,15 +10,38 @@ import bg from '../../assets/images/backImage.jpg';
 import Ionicons from 'react-native-vector-icons/Ionicons';
 import AntDesign from 'react-native-vector-icons/AntDesign';
 import Feather from 'react-native-vector-icons/Feather';
+import {useNavigation, useRoute} from '@react-navigation/native';
+import {Voximplant} from 'react-native-voximplant';
 
 const IncomingCallScreen = () => {
-  const onDecline = () => {};
+  const route = useRoute();
+  const navigation = useNavigation();
+  const {call} = route.params;
+  const [caller, setCaller] = useState('');
 
-  const onAccept = () => {};
+  useEffect(() => {
+    setCaller(call.getEndpoints()[0].displayName);
+
+    call.on(Voximplant.CallEvents.Disconnected, callEvent => {
+      navigation.navigate('Contacts');
+    });
+
+    return () => {
+      call.off(Voximplant.CallEvents.Disconnected);
+    };
+  }, []);
+
+  const onDecline = () => {
+    call.decline();
+  };
+
+  const onAccept = () => {
+    navigation.navigate('Calling', {call, isIncomingCall: true});
+  };
 
   return (
     <ImageBackground source={bg} style={styles.bg} resizeMode="cover">
-      <Text style={styles.name}>Incoming Screen</Text>
+      <Text style={styles.name}>{caller}</Text>
       <Text style={styles.phoneNumber}>WhatsApp Video...</Text>
 
       <View style={[styles.row, {marginTop: 'auto'}]}>

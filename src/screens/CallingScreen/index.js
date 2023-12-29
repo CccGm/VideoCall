@@ -1,18 +1,151 @@
-import React from 'react';
-import {StyleSheet, Text, TouchableOpacity, View} from 'react-native';
+import React, {useEffect, useRef, useState} from 'react';
+import {
+  Alert,
+  PermissionsAndroid,
+  Platform,
+  StyleSheet,
+  Text,
+  TouchableOpacity,
+  View,
+} from 'react-native';
 import CallActionBox from '../../components/CallActionBox';
 import Iconics from 'react-native-vector-icons/Ionicons';
 import {useNavigation, useRoute} from '@react-navigation/native';
+import {Voximplant} from 'react-native-voximplant';
 
 const CallingScreen = () => {
   const navigation = useNavigation();
   const route = useRoute();
+  const voximplant = Voximplant.getInstance();
+  const {user, call: incoming, isIncomingCall} = route?.params;
+  const call = useRef(incoming);
+  const endpoint = useRef(null);
 
-  const user = route?.params?.user;
+  const [permissionGranted, setPermissionGranted] = useState(false);
+  const [callStatus, setCallStatus] = useState('Initializing...');
+  const [localVideoStreamId, setLocalVideoSteramId] = useState('');
+  const [remoteVideoStreamId, setRemoteVideoSteramId] = useState('');
+
+  const permissions = [
+    PermissionsAndroid.PERMISSIONS.RECORD_AUDIO,
+    PermissionsAndroid.PERMISSIONS.CAMERA,
+  ];
 
   const goBack = () => {
     navigation.goBack();
   };
+
+  const onHangUpPress = () => {
+    call.current.hangup();
+  };
+
+  useEffect(() => {
+    const getPermissions = async () => {
+      const granted = await PermissionsAndroid.requestMultiple(permissions);
+
+      const recordAudio = granted[PermissionsAndroid.PERMISSIONS.RECORD_AUDIO];
+      const camera = granted[PermissionsAndroid.PERMISSIONS.CAMERA];
+      if (!camera || !recordAudio) {
+        Alert.alert('Permission Not Granted');
+      } else {
+        setPermissionGranted(true);
+      }
+    };
+    if (Platform.OS == 'android') {
+      getPermissions();
+    } else {
+      setPermissionGranted(true);
+    }
+  }, []);
+
+  useEffect(() => {
+    if (!permissionGranted) {
+      return;
+    }
+
+    const callSettings = {
+      video: {
+        sendVideo: true,
+        receiveVideo: true,
+      },
+    };
+
+    const makeCall = async () => {
+      call.current = await voximplant.call(user.user_name, callSettings);
+      subscribeToCallEvents();
+    };
+
+    const answerCall = async () => {
+      subscribeToCallEvents();
+      endpoint.current = call.current.getEndpoints()[0];
+      subscribeToEndPointEvent();
+      call.current.answer(callSettings);
+    };
+
+    const subscribeToCallEvents = () => {
+      call.current.on(Voximplant.CallEvents.Failed, callEvent => {
+        showError(callEvent.reason);
+      });
+
+      call.current.on(Voximplant.CallEvents.ProgressToneStart, callEvent => {
+        // showError(callEvent.reason);
+        setCallStatus('Calling...');
+      });
+
+      call.current.on(Voximplant.CallEvents.Connected, callEvent => {
+        // showError(callEvent.reason);
+        setCallStatus('Connected');
+      });
+
+      call.current.on(Voximplant.CallEvents.Disconnected, callEvent => {
+        // showError(callEvent.reason);
+        navigation.navigate('Contacts');
+      });
+
+      call.current.on(
+        Voximplant.CallEvents.LocalVideoStreamAdded,
+        callEvent => {
+          setLocalVideoSteramId(callEvent.videoStream.id);
+        },
+      );
+
+      call.current.on(Voximplant.CallEvents.EndpointAdded, callEvent => {
+        endpoint.current = callEvent.endpoint;
+        subscribeToEndPointEvent();
+      });
+    };
+
+    const subscribeToEndPointEvent = async () => {
+      endpoint.current.on(
+        Voximplant.EndpointEvents.RemoteVideoStreamAdded,
+        endPointEvent => {
+          setRemoteVideoSteramId(endPointEvent.videoStream.id);
+        },
+      );
+    };
+
+    const showError = reason => {
+      Alert.alert('call failed', `Reason: ${reason}`, [
+        {
+          text: 'OK',
+          onPress: navigation.navigate('Contacts'),
+        },
+      ]);
+    };
+
+    if (isIncomingCall) {
+      answerCall();
+    } else {
+      makeCall();
+    }
+
+    return () => {
+      call.current.off(Voximplant.CallEvents.Failed);
+      call.current.off(Voximplant.CallEvents.ProgressToneStart);
+      call.current.off(Voximplant.CallEvents.Connected);
+      call.current.off(Voximplant.CallEvents.Disconnected);
+    };
+  }, [permissionGranted]);
 
   return (
     <View style={styles.page}>
@@ -20,11 +153,21 @@ const CallingScreen = () => {
         <Iconics name="chevron-back" size={25} color="white" />
       </TouchableOpacity>
 
+      <Voximplant.VideoView
+        videoStreamId={remoteVideoStreamId}
+        style={styles.remoteVideo}
+      />
+
+      <Voximplant.VideoView
+        videoStreamId={localVideoStreamId}
+        style={styles.localVideo}
+      />
+
       <View style={styles.cameraPreview}>
-        <Text style={styles.name}>{user.user_display_name}</Text>
-        <Text style={styles.phoneNumber}>ringing +9 9987 986986 986</Text>
+        <Text style={styles.name}>{user?.user_display_name}</Text>
+        <Text style={styles.phoneNumber}>{callStatus}</Text>
       </View>
-      <CallActionBox />
+      <CallActionBox onHangUp={onHangUpPress} />
     </View>
   );
 };
@@ -58,6 +201,26 @@ const styles = StyleSheet.create({
     position: 'absolute',
     top: 50,
     left: 20,
+  },
+  localVideo: {
+    width: 100,
+    height: 150,
+    backgroundColor: '#ffff6e',
+
+    borderRadius: 10,
+
+    position: 'absolute',
+    right: 10,
+    top: 100,
+  },
+  remoteVideo: {
+    backgroundColor: '#7b4e80',
+    borderRadius: 10,
+    position: 'absolute',
+    left: 0,
+    right: 0,
+    top: 0,
+    bottom: 0,
   },
 });
 

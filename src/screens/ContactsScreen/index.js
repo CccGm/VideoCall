@@ -9,11 +9,13 @@ import {
 } from 'react-native';
 import dummyData from '../../assets/data/Contects.json';
 import {useNavigation} from '@react-navigation/native';
+import {Voximplant} from 'react-native-voximplant';
 
 const ContactsScreen = () => {
   const [searchTerm, setSearchTerm] = useState('');
   const [filterContacts, setFilterContacts] = useState(dummyData);
   const navigation = useNavigation();
+  const voximplant = Voximplant.getInstance();
 
   useEffect(() => {
     const newContact = dummyData.filter(contact =>
@@ -23,6 +25,15 @@ const ContactsScreen = () => {
     );
     setFilterContacts(newContact);
   }, [searchTerm]);
+
+  useEffect(() => {
+    voximplant.on(Voximplant.ClientEvents.IncomingCall, incomingCallEvent => {
+      navigation.navigate('IncomingCall', {call: incomingCallEvent.call});
+    });
+    return () => {
+      voximplant.off(Voximplant.ClientEvents.IncomingCall);
+    };
+  }, []);
 
   const callUser = user => {
     navigation.navigate('Calling', {user});

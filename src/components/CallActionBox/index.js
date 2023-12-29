@@ -3,7 +3,7 @@ import {StyleSheet, TouchableOpacity, View} from 'react-native';
 import Ionicons from 'react-native-vector-icons/Ionicons';
 import MaterialCommunityIcons from 'react-native-vector-icons/MaterialCommunityIcons';
 
-const CallActionBox = () => {
+const CallActionBox = ({onHangUp}) => {
   const [isCameraOn, setIsCameraOn] = useState(true);
   const [isMicroPhoneOn, setIsMicroPhoneOn] = useState(true);
 
@@ -14,7 +14,6 @@ const CallActionBox = () => {
   const onToggleMicroPhone = () => {
     setIsMicroPhoneOn(currentValue => !currentValue);
   };
-  const onHangeUp = () => {};
 
   return (
     <View style={styles.buttonContainer}>
@@ -39,7 +38,7 @@ const CallActionBox = () => {
       </TouchableOpacity>
 
       <TouchableOpacity
-        onPress={onHangeUp}
+        onPress={onHangUp}
         style={[styles.iconButton, {backgroundColor: 'red'}]}>
         <MaterialCommunityIcons name="phone-hangup" size={30} color={'white'} />
       </TouchableOpacity>
